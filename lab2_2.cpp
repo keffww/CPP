@@ -23,7 +23,7 @@ public:
     subforwardlist(const subforwardlist& other) : begin(nullptr) {
         if (other.begin) {
             Node* other_current = other.begin;
-            Node** current_ptr = &begin;
+            Node** current_ptr = &begin;              // зачем здесь двойой указатель? по способу использования кажется, что и одинарного хватит
             
             while (other_current) {
                 *current_ptr = new Node(other_current->data);
@@ -42,7 +42,8 @@ public:
     subforwardlist& operator=(const subforwardlist& other) {
         if (this != &other) {
             clear();
-            
+            // тут снова повторяется логика копирующего конструктора, можно вынести общий код в отдельную функцию и не копипастить
+            // комментарий аналогичный вектору про copy&swap
             if (other.begin) {
                 Node* other_current = other.begin;
                 Node** current_ptr = &begin;
@@ -64,8 +65,11 @@ public:
             begin = other.begin;
             other.begin = nullptr;
         }
+        // А можно просто свапнуть указатели и все, не зануляя своё состояние
         return *this;
     }
+
+// Здесь и далее неявно используется код, который ищет указатель на ноду по индесу, это можно было вынести в отдельный метод и переиспользовать везде, точно так же как и метод clear()
 
     // добавление элемента в конец
     void push_back(const T& data) {
@@ -187,4 +191,5 @@ private:
             delete temp;
         }
     }
+
 };
