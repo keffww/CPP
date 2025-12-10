@@ -138,6 +138,7 @@ public:
     // Конструкторы
     Matrix(unsigned rows, unsigned cols, T value = T{}) 
         : cols_(cols), rows_(rows) {
+        // Было бы логично сделать конструктор вектора, который по заданному размеру заполняет вектор одинаковыми элементами, тогда код для матрицы выглядел бы куда проще (только лишь через списки инициализации)
         data.resize(rows * cols);
         for (unsigned i = 0; i < rows * cols; i++) {
             data[i] = value;
@@ -148,7 +149,7 @@ public:
     static Matrix Identity(unsigned size) {
         Matrix result(size, size);
         for (unsigned i = 0; i < size; i++) {
-            result(i, i) = T{1};
+            result(i, i) = T{1};    // здесь лучше использоваться static_cast<T>(1), это покрывает больше случаев.
         }
         return result;
     }
@@ -169,7 +170,7 @@ public:
                 }
             }
         }
-        
+        // Добавляем немного случайности и получаем случайный детерминант у матрицы
         return result;
     }
 
@@ -237,11 +238,12 @@ T determinant(const Matrix<T>& matrix) {
         det += sign * matrix(0, j) * determinant(sub);
         sign = -sign;
     }
-    
     return det;
 }
+// мы обсуждали на семинаре, что у такого метода факториальная сложность, и как следствие он явялется неустойчивым к ошибкам округления
 
-// Простой тест
+
+// Простой тест (сколько по времени этот тест считается? лет 400?)
 int main() {
     // Тест 1: матрица 5x5
     Matrix<double> m1 = Matrix<double>::getSpecificDeterminant(5, 10.0);
@@ -259,4 +261,5 @@ int main() {
     double det3_transposed = determinant(m3.transpose());
     
     return 0;
+
 }
