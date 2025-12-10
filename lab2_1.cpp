@@ -1,6 +1,7 @@
 template<typename T>
 class subvector {
     int *mas;
+// В массиве должен быть правильный тип
     unsigned int top;
     unsigned int capacity;
     
@@ -11,18 +12,19 @@ public:
         delete[] mas;
     }
     // Конструктор копирования
-    subvector(const subvector& other) : mas(nullptr), top(0), capacity(0) {
+    subvector(const subvector& other) : mas(nullptr), top(0), capacity(0) {  // Тут можно было делегрировать дефолтный конструктор, чтобы не переписывать код, но вообще см след коммент
         if (other.capacity > 0) {
             mas = new int[other.capacity];
             capacity = other.capacity;
             top = other.top;
+            // 18 - 19 нужно через список инициализации сделать
             for (unsigned int i = 0; i < top; i++) {
                 mas[i] = other.mas[i];
             }
         }
     }
     // Конструктор перемещения
-    subvector(subvector&& other) : mas(other.mas), top(other.top), capacity(other.capacity) {
+    subvector(subvector&& other) : mas(other.mas), top(other.top), capacity(other.capacity) {  // вот так бы везде
         other.mas = nullptr;
         other.top = 0;
         other.capacity = 0;
@@ -31,7 +33,7 @@ public:
     subvector& operator=(const subvector& other) {
         if (this != &other) {
             delete[] mas;
-            
+            // код ниже похож на логику копирующего конструктора. с помощью copy&swap можно было переиспользовать имеющийся код
             if (other.capacity > 0) {
                 mas = new int[other.capacity];
                 capacity = other.capacity;
@@ -50,6 +52,7 @@ public:
     
     // Оператор присваивания (перемещение)
     subvector& operator=(subvector&& other) {
+        // Тут правильнее не удалять себя (это долго), а отдать свое состояние внутрь other, так как это move операция, то такое поведение корректно
         if (this != &other) {
             delete[] mas;
             
@@ -120,4 +123,5 @@ public:
     void clear() {
         top = 0;
     }
+
 };
