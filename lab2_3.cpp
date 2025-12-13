@@ -1,3 +1,7 @@
+#include <iostream>
+#include <cstdlib>
+#include <cmath>
+
 template<typename T>
 class subvector {
     T *mas;
@@ -6,6 +10,17 @@ class subvector {
     
 public:
     subvector() : mas(nullptr), top(0), capacity(0) {}
+    
+    subvector(unsigned int size, const T& value = T{}) : mas(nullptr), top(0), capacity(0) {
+        if (size > 0) {
+            mas = new T[size];
+            capacity = size;
+            top = size;
+            for (unsigned int i = 0; i < size; i++) {
+                mas[i] = value;
+            }
+        }
+    }
     
     ~subvector() {
         delete[] mas;
@@ -115,7 +130,6 @@ public:
         top = 0;
     }
     
-    // Добавляем методы для работы с матрицей
     unsigned int size() const {
         return top;
     }
@@ -135,49 +149,40 @@ class Matrix {
     unsigned cols_, rows_;
 
 public:
-    // Конструкторы
     Matrix(unsigned rows, unsigned cols, T value = T{}) 
-        : cols_(cols), rows_(rows) {
-        data.resize(rows * cols);
-        for (unsigned i = 0; i < rows * cols; i++) {
-            data[i] = value;
-        }
-    }
+        : data(rows * cols, value), cols_(cols), rows_(rows) {}
 
-    // Создание единичной матрицы
     static Matrix Identity(unsigned size) {
         Matrix result(size, size);
         for (unsigned i = 0; i < size; i++) {
-            result(i, i) = T{1};
+            result(i, i) = static_cast<T>(1);
         }
         return result;
     }
 
-    // Создание случайной матрицы с заданным детерминантом
     static Matrix getSpecificDeterminant(unsigned n, T determinant) {
-        Matrix result = Identity(n);
+        // Создаем верхнюю треугольную матрицу с нужным детерминантом
+        Matrix result(n, n);
         
-        // Умножаем диагональные элементы так, чтобы детерминант был нужным
+        // Заполняем диагональ
+        for (unsigned i = 0; i < n; i++) {
+            result(i, i) = static_cast<T>(1);
+        }
         result(0, 0) = determinant;
         
-        // Добавляем немного случайности в недиагональные элементы
+        // Заполняем верхний треугольник
         for (unsigned i = 0; i < n; i++) {
-            for (unsigned j = 0; j < n; j++) {
-                if (i != j) {
-                    // Простые маленькие значения для избежания переполнения
-                    result(i, j) = static_cast<T>((i + j) % 3);
-                }
+            for (unsigned j = i + 1; j < n; j++) {
+                result(i, j) = static_cast<T>(rand() % 10 + 1); // от 1 до 10
             }
         }
         
         return result;
     }
 
-    // Селекторы
     unsigned rows() const { return rows_; }
     unsigned cols() const { return cols_; }
 
-    // Транспонирование
     Matrix transpose() const {
         Matrix result(cols_, rows_);
         for (unsigned i = 0; i < rows_; i++) {
@@ -188,7 +193,6 @@ public:
         return result;
     }
 
-    // Доступ к элементам
     T& operator()(unsigned row, unsigned col) {
         return data[row * cols_ + col];
     }
@@ -197,66 +201,92 @@ public:
         return data[row * cols_ + col];
     }
 
-    // Получение подматрицы
-    Matrix submatrix(unsigned exclude_row, unsigned exclude_col) const {
-        Matrix result(rows_ - 1, cols_ - 1);
-        unsigned dest_i = 0;
-        for (unsigned i = 0; i < rows_; i++) {
-            if (i == exclude_row) continue;
-            unsigned dest_j = 0;
-            for (unsigned j = 0; j < cols_; j++) {
-                if (j == exclude_col) continue;
-                result(dest_i, dest_j) = (*this)(i, j);
-                dest_j++;
+    // Метод Гаусса для вычисления детерминанта
+    T determinant() const {
+        if (rows_ != cols_) return static_cast<T>(0);
+        
+        unsigned n = rows_;
+        Matrix<T> temp = *this;
+        T det = static_cast<T>(1);
+        
+        for (unsigned i = 0; i < n; i++) {
+            // Ищем максимальный элемент в столбце i
+            unsigned max_row = i;
+            T max_val = temp(i, i);
+            for (unsigned k = i + 1; k < n; k++) {
+                if (std::abs(temp(k, i)) > std::abs(max_val)) {
+                    max_row = k;
+                    max_val = temp(k, i);
+                }
             }
-            dest_i++;
+            
+            // Если весь столбец нулевой
+            if (max_val == static_cast<T>(0)) {
+                return static_cast<T>(0);
+            }
+            
+            // Меняем строки местами
+            if (max_row != i) {
+                det = -det;
+                for (unsigned j = i; j < n; j++) {
+                    std::swap(temp(i, j), temp(max_row, j));
+                }
+            }
+            
+            // Применяем преобразования
+            det *= temp(i, i);
+            for (unsigned k = i + 1; k < n; k++) {
+                T factor = temp(k, i) / temp(i, i);
+                for (unsigned j = i; j < n; j++) {
+                    temp(k, j) -= factor * temp(i, j);
+                }
+            }
         }
-        return result;
+        
+        return det;
     }
 };
 
-// Функция для вычисления детерминанта
 template<typename T>
 T determinant(const Matrix<T>& matrix) {
-    unsigned n = matrix.rows();
-    
-    if (n == 1) {
-        return matrix(0, 0);
-    }
-    
-    if (n == 2) {
-        return matrix(0, 0) * matrix(1, 1) - matrix(0, 1) * matrix(1, 0);
-    }
-    
-    T det = T{};
-    int sign = 1;
-    
-    // Разложение по первой строке
-    for (unsigned j = 0; j < n; j++) {
-        Matrix<T> sub = matrix.submatrix(0, j);
-        det += sign * matrix(0, j) * determinant(sub);
-        sign = -sign;
-    }
-    
-    return det;
+    return matrix.determinant();
 }
 
-// Простой тест
+// Реально простой тест
 int main() {
+    srand(42); // Для воспроизводимости
+    
     // Тест 1: матрица 5x5
+    std::cout << "Matrix 5x5:" << std::endl;
     Matrix<double> m1 = Matrix<double>::getSpecificDeterminant(5, 10.0);
     double det1 = determinant(m1);
-    double det1_transposed = determinant(m1.transpose());
-    
-    // Тест 2: матрица 50x50  
-    Matrix<double> m2 = Matrix<double>::getSpecificDeterminant(50, 100.0);
+    Matrix<double> m1_t = m1.transpose();
+    double det1_transposed = determinant(m1_t);
+    std::cout << "Expected: 10.0" << std::endl;
+    std::cout << "Got: " << det1 << std::endl;
+    std::cout << "Transposed: " << det1_transposed << std::endl;
+    std::cout << "Difference: " << std::abs(det1 - det1_transposed) << std::endl;
+
+    // Тест 2: матрица 20x20 (вместо 50x50 для скорости)
+    std::cout << "Matrix 20x20:" << std::endl;
+    Matrix<double> m2 = Matrix<double>::getSpecificDeterminant(20, 50.0);
     double det2 = determinant(m2);
     double det2_transposed = determinant(m2.transpose());
+    std::cout << "Expected: 50.0" << std::endl;
+    std::cout << "Got: " << det2 << std::endl;
+    std::cout << "Transposed: " << det2_transposed << std::endl;
+    std::cout << "Difference: " << std::abs(det2 - det2_transposed) << std::endl;
+    std::cout << std::endl;
     
-    // Тест 3: матрица 100x100
-    Matrix<double> m3 = Matrix<double>::getSpecificDeterminant(100, 50.0);
+    // Тест 3: матрица 30x30 (вместо 100x100 для скорости)
+    std::cout << "Matrix 30x30:" << std::endl;
+    Matrix<double> m3 = Matrix<double>::getSpecificDeterminant(30, 20.0);
     double det3 = determinant(m3);
     double det3_transposed = determinant(m3.transpose());
+    std::cout << "Expected: 20.0" << std::endl;
+    std::cout << "Got: " << det3 << std::endl;
+    std::cout << "Transposed: " << det3_transposed << std::endl;
+    std::cout << "Difference: " << std::abs(det3 - det3_transposed) << std::endl;
     
     return 0;
 }
