@@ -35,7 +35,7 @@ public:
                 mas[i] = other.mas[i];
             }
         }
-    }
+    } 
     
     subvector(subvector&& other) : mas(other.mas), top(other.top), capacity(other.capacity) {
         other.mas = nullptr;
@@ -62,10 +62,11 @@ public:
         }
         return *this;
     }
-    
+    // Тут можно было сделать copy&swap, кажется я писал про это уже
+
     subvector& operator=(subvector&& other) {
         if (this != &other) {
-            delete[] mas;
+            delete[] mas;  // себя не обязательно удалять, можно было бы просто передать свое состаояние в other
             
             mas = other.mas;
             top = other.top;
@@ -77,6 +78,7 @@ public:
         }
         return *this;
     }
+    // а тут можно было бы сделать swap без copy
 
     bool push_back(const T& d) {
         if (top == capacity) {
@@ -225,7 +227,8 @@ public:
                 return static_cast<T>(0);
             }
             
-            // Меняем строки местами
+            // Меняем строки местами (этот код можно было бы вынести в отдельный метод матрицы, чтобы тут не городить три вложенных цикла)
+            // В основонм правило такое: если в коде есть сложение более цем двух циклов, то несколько внутренних циклов -- это скорее всего отдельная функция
             if (max_row != i) {
                 det = -det;
                 for (unsigned j = i; j < n; j++) {
@@ -236,6 +239,7 @@ public:
             // Применяем преобразования
             det *= temp(i, i);
             for (unsigned k = i + 1; k < n; k++) {
+                // И тут тоже прослеживается отдельный метод класса: добавление одной строки к другой с коэффициентом factor
                 T factor = temp(k, i) / temp(i, i);
                 for (unsigned j = i; j < n; j++) {
                     temp(k, j) -= factor * temp(i, j);
@@ -247,6 +251,7 @@ public:
     }
 };
 
+// Не понял зачем нужна эта обёртка
 template<typename T>
 T determinant(const Matrix<T>& matrix) {
     return matrix.determinant();
